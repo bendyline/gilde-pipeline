@@ -1,0 +1,98 @@
+---
+import Layout from '../layouts/Layout.astro';
+import {
+  kindCount,
+  craftbooks,
+  gildeVersion,
+} from '../lib/catalog';
+
+const evalCount = craftbooks().filter((c) => c.hasEval).length;
+const tiles = [
+  {
+    href: '/craftbooks/',
+    count: kindCount('craftbook-templates'),
+    title: 'Craftbooks',
+    blurb: 'Step-by-step task playbooks: who does what, in which order, with a quality gate at the end.',
+  },
+  {
+    href: '/models/',
+    count: kindCount('chat-models'),
+    title: 'Chat models',
+    blurb: 'Local model manifests with verified downloads, engine blocks, and tuned sampling defaults.',
+  },
+  {
+    href: '/roles/',
+    count: kindCount('gezel-templates'),
+    title: 'Roles',
+    blurb: 'Ready-made gezel characters, from developer and reviewer to meal planner and coach.',
+  },
+  {
+    href: '/toolsets/',
+    count: kindCount('toolsets') + kindCount('connector-types') + kindCount('project-types'),
+    title: 'Toolsets and more',
+    blurb: 'First-party toolsets, data connectors, and complete project types ready to open.',
+  },
+  {
+    href: '/models/#image-models',
+    count: kindCount('image-models') + kindCount('video-models'),
+    title: 'Image and video models',
+    blurb: 'Local image generation and video models, sized and licensed for real hardware.',
+  },
+  {
+    href: '/community/',
+    count: kindCount('community/toolsets'),
+    title: 'Community servers',
+    blurb: 'MCP servers from the community registry, indexed and searchable.',
+  },
+];
+---
+
+<Layout title="gilde - the open catalog for gezel">
+  <div class="hero">
+    <h1>A guild catalog for your crew of AI companions.</h1>
+    <p class="lede">
+      <strong>Gezel</strong> is a local-first desktop app for assembling a team of warm, named AI
+      companions — gezels — and putting them to work. <strong>Gilde</strong> (Dutch for guild) is
+      the open catalog that powers them: craftbooks that turn vague asks into stepwise plans,
+      model manifests with verified downloads, roles with real character, and toolsets that give
+      a crew its hands.
+    </p>
+    <div class="install-row">
+      <pre><code>npm i @bendyline/gilde</code></pre>
+      <span>
+        v{gildeVersion()} &middot; <a href="https://github.com/bendyline/gilde">github.com/bendyline/gilde</a>
+      </span>
+    </div>
+  </div>
+
+  <div class="tile-grid">
+    {tiles.map((t) => (
+      <a class="card" href={t.href}>
+        <span class="count">{t.count}</span>
+        <h3>{t.title}</h3>
+        <p>{t.blurb}</p>
+      </a>
+    ))}
+  </div>
+
+  <h2>What is in the catalog</h2>
+  <div class="prose">
+    <p>
+      Everything in gilde is plain files: JSON manifests and markdown prose, versioned in the
+      open, shipped as one npm package, and mirrored to this site. A gezel client reads the
+      catalog to offer models it can actually run, craftbooks it can actually follow, and roles
+      it can actually staff.
+    </p>
+    <p>
+      <strong>Craftbooks</strong> are the heart of it: {kindCount('craftbook-templates')} playbooks
+      where the first step locks acceptance criteria and a reviewer grades the result against
+      them — the scaffolding a small local model needs to do real work. {evalCount} of them
+      ship with an evaluation sidecar so changes are tested, not vibed.
+    </p>
+    <p>
+      The catalog updates flow to installed apps through a small static
+      <a href="/docs/update-manifest/">update manifest</a> published on this site — no server,
+      no accounts, no tracking. Local-first all the way down.
+    </p>
+  </div>
+</Layout>

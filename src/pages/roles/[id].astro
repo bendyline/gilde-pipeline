@@ -1,0 +1,47 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { roles, githubTreeUrl, excerpt } from '../../lib/catalog';
+import type { Role } from '../../lib/catalog';
+
+export function getStaticPaths() {
+  return roles().map((role) => ({ params: { id: role.id }, props: { role } }));
+}
+
+interface Props {
+  role: Role;
+}
+
+const { role: r } = Astro.props;
+const releasedAt = typeof r.releasedAt === 'string' ? r.releasedAt.slice(0, 10) : '';
+---
+
+<Layout title={`${r.name} - roles - gilde`} description={excerpt(r.description, 155)}>
+  <p><a href="/roles/">&larr; All roles</a></p>
+  <h1>{r.name}</h1>
+  <p class="card-meta" style="margin-top:0;">
+    {r.role && <span class="badge badge-plain">{r.role}</span>}
+    {r.meesterCandidate && <span class="badge badge-mid">meester candidate</span>}
+    <span>v{r.version}</span>
+    {releasedAt && <span>released {releasedAt}</span>}
+  </p>
+
+  <div class="prose">
+    <p>{r.description}</p>
+  </div>
+
+  {r.aboutHtml && (
+    <>
+      <h2>Working identity</h2>
+      <p class="section-note">
+        The about.md that becomes this gezel's system prompt, verbatim.
+      </p>
+      <div class="prose" set:html={r.aboutHtml} />
+    </>
+  )}
+
+  <h2>Source</h2>
+  <p>
+    <a href={githubTreeUrl('gezel-templates', r.id)}>View this role on GitHub</a>
+    {r.license && <span> &middot; {r.license} license</span>}
+  </p>
+</Layout>

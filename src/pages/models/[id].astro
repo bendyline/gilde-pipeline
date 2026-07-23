@@ -1,0 +1,137 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import {
+  chatModels,
+  modelQuantization,
+  modelEngines,
+  formatGB,
+  formatContext,
+  githubTreeUrl,
+  excerpt,
+} from '../../lib/catalog';
+import type { ChatModel } from '../../lib/catalog';
+
+export function getStaticPaths() {
+  return chatModels().map((model) => ({ params: { id: model.id }, props: { model } }));
+}
+
+interface Props {
+  model: ChatModel;
+}
+
+const { model: m } = Astro.props;
+const sampling = m.tuning?.sampling ?? {};
+const reasoning = m.tuning?.reasoning ?? {};
+const profiles = m.tuning?.profiles ? Object.keys(m.tuning.profiles) : [];
+const behaviors: string[] = Array.isArray(m.behaviors)
+  ? m.behaviors.map((b: any) => (typeof b === 'string' ? b : String(b?.id ?? '')))
+  : [];
+const hf = (repo: string) => `https://huggingface.co/${repo}`;
+const releasedAt = typeof m.releasedAt === 'string' ? m.releasedAt.slice(0, 10) : '';
+---
+
+<Layout title={`${m.name} - models - gilde`} description={excerpt(m.description, 155)}>
+  <p><a href="/models/">&larr; All models</a></p>
+  <h1>{m.name}</h1>
+  <p class="card-meta" style="margin-top:0;">
+    {m.category && <span class="badge badge-plain">{m.category}</span>}
+    <span class="badge badge-plain">{m.licenseShortName ?? m.license}</span>
+    {m.supportsTools && <span class="badge badge-open">tools</span>}
+    {typeof m.recoScore === 'number' && <span>reco {m.recoScore}</span>}
+  </p>
+
+  <div class="prose">
+    <p>{m.description}</p>
+  </div>
+
+  <h2>At a glance</h2>
+  <dl class="fact-grid">
+    <dt>Parameters</dt><dd>{m.parameterSize ?? 'n/a'}</dd>
+    <dt>Quantization</dt><dd>{modelQuantization(m) || 'n/a'}</dd>
+    <dt>Context window</dt><dd>{formatContext(m.contextWindow) || 'n/a'} tokens</dd>
+    <dt>Approx. size</dt><dd>{formatGB(m.approxSizeBytes) || 'n/a'}</dd>
+    <dt>Engines</dt><dd>{modelEngines(m).join(', ') || 'n/a'}</dd>
+    <dt>License</dt><dd>{m.license ?? 'n/a'} ({m.licenseClass ?? 'unclassified'})</dd>
+    <dt>Version</dt><dd>v{m.version}{releasedAt && ` , released ${releasedAt}`}</dd>
+    {m.style?.family && (<><dt>Family</dt><dd>{m.style.family}</dd></>)}
+  </dl>
+
+  {(Object.keys(sampling).length > 0 || Object.keys(reasoning).length > 0 || profiles.length > 0) && (
+    <>
+      <h2>Tuning</h2>
+      <p class="section-note">
+        Defaults a gezel client applies out of the box, from real evaluation runs against this
+        exact quantization.
+      </p>
+      <dl class="fact-grid">
+        {Object.entries(sampling).map(([k, v]) => (
+          <><dt>sampling.{k}</dt><dd><code>{JSON.stringify(v)}</code></dd></>
+        ))}
+        {Object.entries(reasoning).map(([k, v]) => (
+          <><dt>reasoning.{k}</dt><dd><code>{JSON.stringify(v)}</code></dd></>
+        ))}
+        {profiles.length > 0 && (<><dt>profiles</dt><dd>{profiles.join(', ')}</dd></>)}
+      </dl>
+    </>
+  )}
+
+  {behaviors.length > 0 && (
+    <>
+      <h2>Model behaviors</h2>
+      <p class="section-note">
+        Client-side behavior modules the catalog enables for this model (reasoning-tag handling,
+        fabrication detection, prompt shaping).
+      </p>
+      <ul class="chip-row">
+        {behaviors.filter(Boolean).map((b) => (
+          <li class="chip">{b}</li>
+        ))}
+      </ul>
+    </>
+  )}
+
+  <h2>Sources</h2>
+  <dl class="fact-grid">
+    {m.llamaCpp?.huggingfaceRepo && (
+      <>
+        <dt>llama.cpp (GGUF)</dt>
+        <dd>
+          <a href={hf(m.llamaCpp.huggingfaceRepo)}>{m.llamaCpp.huggingfaceRepo}</a>
+          {m.llamaCpp.filename && <> &middot; <code>{m.llamaCpp.filename}</code></>}
+          {m.llamaCpp.quantization && <> &middot; {m.llamaCpp.quantization}</>}
+        </dd>
+      </>
+    )}
+    {m.mlx?.huggingfaceRepo && (
+      <>
+        <dt>MLX</dt>
+        <dd><a href={hf(m.mlx.huggingfaceRepo)}>{m.mlx.huggingfaceRepo}</a></dd>
+      </>
+    )}
+    {m.ollama?.tag && (
+      <>
+        <dt>Ollama</dt>
+        <dd><code>{m.ollama.tag}</code></dd>
+      </>
+    )}
+    {m.upstream && (
+      <>
+        <dt>Upstream</dt>
+        <dd><a href={m.upstream}>{m.upstream}</a></dd>
+      </>
+    )}
+    <dt>Manifest</dt>
+    <dd><a href={githubTreeUrl('chat-models', m.id)}>View on GitHub</a></dd>
+  </dl>
+
+  {Array.isArray(m.tags) && m.tags.length > 0 && (
+    <>
+      <h2>Tags</h2>
+      <ul class="chip-row">
+        {m.tags.map((t: string) => (
+          <li class="chip">{t}</li>
+        ))}
+      </ul>
+    </>
+  )}
+</Layout>

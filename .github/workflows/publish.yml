@@ -1,0 +1,212 @@
+# Verify the gilde catalog, publish @bendyline/gilde to npm, and deploy
+# gezelgilde.com (site + catalog update manifest) to GitHub Pages.
+#
+# Trigger model:
+#   - repository_dispatch "gilde-updated": fired by the gilde repo on push,
+#     carrying the exact commit in client_payload.sha.
+#   - workflow_dispatch: manual runs, optionally forcing a publish.
+#   - weekly cron: safety net so a missed dispatch never goes stale.
+name: publish
+
+on:
+  repository_dispatch:
+    types: [gilde-updated]
+  workflow_dispatch:
+    inputs:
+      gilde_ref:
+        description: gilde ref (branch, tag, or sha) to build
+        default: main
+        type: string
+      force_publish:
+        description: publish even if this commit was already published
+        default: false
+        type: boolean
+  schedule:
+    - cron: '17 5 * * 1'
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Defense in depth: re-run gilde's own validation here — never trust that
+  # branch protection ran it on the gilde side.
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      gilde_sha: ${{ steps.sha.outputs.gilde_sha }}
+    steps:
+      - name: Checkout gilde-pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout gilde
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: bendyline/gilde
+          ref: ${{ github.event.client_payload.sha || inputs.gilde_ref || 'main' }}
+          path: gilde
+
+      - name: Resolve gilde commit
+        id: sha
+        run: echo "gilde_sha=$(git -C gilde rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Install gilde tools
+        run: npm --prefix gilde/tools ci
+
+      - name: Validate catalog
+        working-directory: gilde
+        run: node tools/validate.mjs
+
+      - name: Check indexes are current
+        working-directory: gilde
+        run: node tools/build-index.mjs --check
+
+      - name: Lint model manifests
+        working-directory: gilde
+        run: node tools/lint-models.mjs
+
+  publish-npm:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # npm trusted publishing: the npm CLI exchanges a GitHub OIDC token for
+      # short-lived publish credentials, so no NPM_TOKEN secret is needed.
+      # One-time setup lives in README.md ("npm trusted publishing").
+      id-token: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      published: ${{ steps.version.outputs.publish }}
+    steps:
+      - name: Checkout gilde-pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout gilde
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: bendyline/gilde
+          ref: ${{ needs.verify.outputs.gilde_sha }}
+          path: gilde
+
+      # No registry-url here: setup-node would write an .npmrc that expects a
+      # NODE_AUTH_TOKEN env var, which breaks token-less trusted publishing.
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      # Trusted publishing needs npm >= 11.5.1; fail loudly with a clear
+      # message instead of letting npm publish die with ENEEDAUTH.
+      - name: Check npm supports trusted publishing
+        run: |
+          ver=$(npm --version)
+          node -e "
+            const [a, b, c] = '$ver'.split('.').map(Number);
+            if (a > 11 || (a === 11 && (b > 5 || (b === 5 && c >= 1)))) process.exit(0);
+            console.error('npm ' + '$ver' + ' is too old for trusted publishing (need >= 11.5.1).');
+            process.exit(1);
+          "
+
+      - name: Compute version
+        id: version
+        run: >
+          node scripts/compute-version.mjs
+          --gilde=./gilde
+          --sha=${{ needs.verify.outputs.gilde_sha }}
+          ${{ inputs.force_publish == true && '--force' || '' }}
+
+      - name: Apply version
+        if: steps.version.outputs.publish == 'yes'
+        working-directory: gilde
+        run: npm version --no-git-tag-version "${{ steps.version.outputs.version }}"
+
+      - name: Check package size
+        if: steps.version.outputs.publish == 'yes'
+        run: node scripts/check-package-size.mjs --gilde=./gilde
+
+      # Auth comes from trusted publishing (OIDC via id-token: write above);
+      # there is deliberately no token secret in this step.
+      #
+      # provenance=false: trusted publishing generates provenance by default,
+      # but the attestation's repository check would fail — this workflow
+      # publishes from gilde-pipeline while package.json.repository points at
+      # bendyline/gilde. Upgrade path: move the publish step into a workflow
+      # in the gilde repo itself, then drop this flag.
+      - name: Publish to npm
+        if: steps.version.outputs.publish == 'yes'
+        working-directory: gilde
+        run: npm publish --access public --provenance=false
+
+  # Runs whenever verify succeeded, including runs where the npm publish was
+  # skipped because that gilde commit is already on the registry.
+  deploy-site:
+    needs: [verify, publish-npm]
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout gilde-pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout gilde
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: bendyline/gilde
+          ref: ${{ needs.verify.outputs.gilde_sha }}
+          path: gilde
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install site dependencies
+        run: npm ci
+
+      - name: Resolve content version
+        id: content
+        run: |
+          if [ "${{ needs.publish-npm.outputs.published }}" = "yes" ] && [ -n "${{ needs.publish-npm.outputs.version }}" ]; then
+            echo "content_version=${{ needs.publish-npm.outputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "content_version=$(npm view @bendyline/gilde version)" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Order matters: astro build first, so it can never clobber the
+      # update manifest emitted into dist/ afterwards.
+      - name: Build site
+        run: npx astro build
+
+      - name: Build update manifest
+        run: >
+          node scripts/build-update-manifest.mjs
+          --gilde=./gilde
+          --version=${{ steps.content.outputs.content_version }}
+          --sha=${{ needs.verify.outputs.gilde_sha }}
+          --out=dist/catalog/v1
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0

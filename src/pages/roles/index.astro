@@ -1,0 +1,28 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { roles, excerpt } from '../../lib/catalog';
+
+const all = roles();
+---
+
+<Layout title="Roles - gilde" description="Ready-made gezel characters: developers, reviewers, researchers, coaches, planners, and more.">
+  <h1>Roles</h1>
+  <p class="lede">
+    {all.length} ready-made characters for a gezel crew. Each role is a full working identity —
+    prose that shapes how the gezel thinks, works, and talks — not a paragraph of instructions.
+    Craftbook steps name these roles, and a crew staffs them on demand.
+  </p>
+
+  <div class="tile-grid">
+    {all.map((r) => (
+      <a class="card" href={`/roles/${r.id}/`}>
+        <h3>{r.name}</h3>
+        <p>{excerpt(r.description, 150)}</p>
+        <span class="card-meta">
+          {r.role && <span class="badge badge-plain">{r.role}</span>}
+          {r.meesterCandidate && <span class="badge badge-mid">meester candidate</span>}
+        </span>
+      </a>
+    ))}
+  </div>
+</Layout>

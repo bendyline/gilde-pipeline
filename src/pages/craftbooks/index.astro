@@ -1,0 +1,42 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { craftbooksByFamily, excerpt } from '../../lib/catalog';
+
+const groups = craftbooksByFamily();
+const total = groups.reduce((n, g) => n + g.books.length, 0);
+const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+---
+
+<Layout title="Craftbooks - gilde" description="Step-by-step task playbooks for gezel crews: build, write, analyze, research, review, ship.">
+  <h1>Craftbooks</h1>
+  <p class="lede">
+    {total} playbooks that turn "make me a landing page" into a stepwise plan: the first step
+    locks acceptance criteria, specialists take their phase, and a reviewer grades the result
+    before it ships. Books marked <span class="badge badge-eval">eval</span> carry an evaluation
+    sidecar that tests the book itself.
+  </p>
+
+  <ul class="anchor-toc">
+    {groups.map((g) => (
+      <li><a href={`#${slugify(g.family)}`}>{g.family} ({g.books.length})</a></li>
+    ))}
+  </ul>
+
+  {groups.map((g) => (
+    <section>
+      <h2 id={slugify(g.family)}>{g.family}</h2>
+      <div class="tile-grid">
+        {g.books.map((b) => (
+          <a class="card" href={`/craftbooks/${b.id}/`}>
+            <h3>{b.name}</h3>
+            <p>{excerpt(b.description, 150)}</p>
+            <span class="card-meta">
+              <span>{b.steps.length} {b.steps.length === 1 ? 'step' : 'steps'}</span>
+              {b.hasEval && <span class="badge badge-eval">eval</span>}
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ))}
+</Layout>

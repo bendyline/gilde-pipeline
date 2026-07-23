@@ -1,0 +1,35 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { docs } from '../../lib/catalog';
+import type { Doc } from '../../lib/catalog';
+
+export function getStaticPaths() {
+  return docs().map((doc) => ({ params: { slug: doc.slug }, props: { doc } }));
+}
+
+interface Props {
+  doc: Doc;
+}
+
+const { doc } = Astro.props;
+const all = docs();
+---
+
+<Layout title={`${doc.title} - docs - gilde`} description={`Gilde documentation: ${doc.title}`}>
+  <h1 style="margin-bottom:1rem;">Docs</h1>
+  <ul class="anchor-toc">
+    {all.map((d) => (
+      <li>
+        <a href={`/docs/${d.slug}/`} aria-current={d.slug === doc.slug ? 'true' : undefined}>
+          {d.title}
+        </a>
+      </li>
+    ))}
+  </ul>
+  <article class="prose" set:html={doc.html} />
+  <p style="margin-top:2rem;">
+    <a href={`https://github.com/bendyline/gilde/blob/main/docs/${doc.slug}.md`}>
+      Edit this page on GitHub
+    </a>
+  </p>
+</Layout>

@@ -1,0 +1,80 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { toolsets, connectorTypes, projectTypes, excerpt, githubTreeUrl } from '../../lib/catalog';
+
+const ts = toolsets();
+const connectors = connectorTypes();
+const projects = projectTypes();
+
+const projectGroups = new Map<string, typeof projects>();
+for (const p of projects) {
+  const category = String(p.category ?? 'general');
+  const list = projectGroups.get(category) ?? [];
+  list.push(p);
+  projectGroups.set(category, list);
+}
+const sortedGroups = [...projectGroups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+---
+
+<Layout title="Toolsets - gilde" description="First-party toolsets, data connectors, and complete project types for gezel crews.">
+  <h1>Toolsets, connectors, and project types</h1>
+  <p class="lede">
+    The hands and the workbenches. Toolsets give a gezel real capabilities via MCP servers;
+    connector types mirror outside data (mail, calendars, issues) into searchable project files;
+    project types are complete, ready-to-open rooms — staffed, tooled, and briefed. Thousands of
+    community MCP servers live in the <a href="/community/">community directory</a>.
+  </p>
+
+  <h2 id="toolsets">First-party toolsets ({ts.length})</h2>
+  <div class="tile-grid">
+    {ts.map((t) => (
+      <a class="card" href={githubTreeUrl('toolsets', t.id)}>
+        <h3>{t.name}</h3>
+        <p>{excerpt(t.description, 160)}</p>
+        <span class="card-meta">
+          {t.category && <span class="badge badge-plain">{t.category}</span>}
+          <span>v{t.version}</span>
+        </span>
+      </a>
+    ))}
+  </div>
+
+  <h2 id="connectors">Connector types ({connectors.length})</h2>
+  <p class="section-note">
+    Each connector mirrors an outside source into normalized, searchable files inside a project —
+    so a crew works on a local corpus, never a live account.
+  </p>
+  <div class="tile-grid">
+    {connectors.map((c) => (
+      <a class="card" href={githubTreeUrl('connector-types', c.id)}>
+        <h3>{c.name}</h3>
+        <p>{excerpt(c.description, 160)}</p>
+        <span class="card-meta">
+          <span>v{c.version}</span>
+        </span>
+      </a>
+    ))}
+  </div>
+
+  <h2 id="project-types">Project types ({projects.length})</h2>
+  <p class="section-note">
+    Complete rooms to open in gezel: a named crew, the right toolsets, a mission brief, and the
+    first craftbooks already on the bench.
+  </p>
+  {sortedGroups.map(([category, list]) => (
+    <section>
+      <h3>{category}</h3>
+      <div class="tile-grid">
+        {list.map((p) => (
+          <a class="card" href={githubTreeUrl('project-types', p.id)}>
+            <h3>{p.name}</h3>
+            <p>{excerpt(p.description, 150)}</p>
+            <span class="card-meta">
+              <span>v{p.version}</span>
+            </span>
+          </a>
+        ))}
+      </div>
+    </section>
+  ))}
+</Layout>
