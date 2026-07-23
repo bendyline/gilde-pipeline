@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Verifies the gilde catalog, publishes @bendyline/gilde to npm, and deploys gezelgilde.com.",
+  "description": "Verifies the gilde catalog and deploys gezelgilde.com.",
   "engines": {
     "node": ">=24"
   },
@@ -11,9 +11,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "update-manifest": "node scripts/build-update-manifest.mjs",
-    "check-size": "node scripts/check-package-size.mjs",
-    "compute-version": "node scripts/compute-version.mjs"
+    "update-manifest": "node scripts/build-update-manifest.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",

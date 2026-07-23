@@ -1,0 +1,133 @@
+# Verify the gilde catalog and deploy gezelgilde.com (site + catalog update
+# manifest) to GitHub Pages.
+#
+# npm publishing does NOT happen here: @bendyline/gilde publishes from a
+# workflow inside bendyline/gilde itself (so npm provenance verifies). This
+# workflow only builds and deploys the site, resolving the published version
+# from the registry.
+#
+# Trigger model:
+#   - workflow_dispatch: run manually after publishing @bendyline/gilde from
+#     the gilde repo, or any time the site itself changes.
+#   - weekly cron: safety net so the site never goes stale.
+name: deploy-site
+
+on:
+  workflow_dispatch:
+    inputs:
+      gilde_ref:
+        description: gilde ref (branch, tag, or sha) to build
+        default: main
+        type: string
+  schedule:
+    - cron: '17 5 * * 1'
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # Defense in depth: re-run gilde's own validation here — never trust that
+  # branch protection ran it on the gilde side.
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      gilde_sha: ${{ steps.sha.outputs.gilde_sha }}
+    steps:
+      - name: Checkout gilde-pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout gilde
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: bendyline/gilde
+          ref: ${{ inputs.gilde_ref || 'main' }}
+          path: gilde
+
+      - name: Resolve gilde commit
+        id: sha
+        run: echo "gilde_sha=$(git -C gilde rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Install gilde tools
+        run: npm --prefix gilde/tools ci
+
+      - name: Validate catalog
+        working-directory: gilde
+        run: node tools/validate.mjs
+
+      - name: Check indexes are current
+        working-directory: gilde
+        run: node tools/build-index.mjs --check
+
+      - name: Lint model manifests
+        working-directory: gilde
+        run: node tools/lint-models.mjs
+
+  deploy-site:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+      contents: read
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Checkout gilde-pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Checkout gilde
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: bendyline/gilde
+          ref: ${{ needs.verify.outputs.gilde_sha }}
+          path: gilde
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install site dependencies
+        run: npm ci
+
+      # The site always tracks whatever `latest` is on the registry — run
+      # this workflow after a publish to pick up the new version.
+      - name: Resolve content version
+        id: content
+        run: echo "content_version=$(npm view @bendyline/gilde version)" >> "$GITHUB_OUTPUT"
+
+      # Order matters: astro build first, so it can never clobber the
+      # update manifest emitted into dist/ afterwards.
+      - name: Build site
+        run: npx astro build
+
+      - name: Build update manifest
+        run: >
+          node scripts/build-update-manifest.mjs
+          --gilde=./gilde
+          --version=${{ steps.content.outputs.content_version }}
+          --sha=${{ needs.verify.outputs.gilde_sha }}
+          --out=dist/catalog/v1
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist/
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
