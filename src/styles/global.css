@@ -266,6 +266,56 @@ a.card:hover {
   margin-bottom: 0.15rem;
 }
 
+.craftbook-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--craftbook-card-bg) 88%, white),
+      var(--craftbook-card-bg)
+    );
+  border-color: color-mix(in srgb, var(--craftbook-card-bg), var(--ink) 18%);
+  color: #30281d;
+  box-shadow: 0 0.2rem 0.7rem rgb(44 37 27 / 0.08);
+}
+
+a.craftbook-card:hover {
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--craftbook-card-bg) 82%, white),
+      color-mix(in srgb, var(--craftbook-card-bg) 94%, var(--accent))
+    );
+  border-color: color-mix(in srgb, var(--craftbook-card-bg), #2c251b 32%);
+  color: #2c251b;
+  box-shadow: 0 0.35rem 1rem rgb(44 37 27 / 0.14);
+}
+
+.craftbook-card-icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  flex: 0 0 4.5rem;
+  object-fit: cover;
+  border: 1px solid color-mix(in srgb, var(--craftbook-card-bg), #2c251b 14%);
+  border-radius: var(--radius);
+  background: var(--craftbook-card-bg);
+}
+
+.craftbook-card-copy {
+  display: block;
+  min-width: 0;
+}
+
+.craftbook-card p {
+  color: #5d5040;
+}
+
+.craftbook-card .card-meta {
+  color: #62543f;
+}
+
 .card-meta {
   margin-top: 0.55rem;
   display: flex;
@@ -274,6 +324,52 @@ a.card:hover {
   flex-wrap: wrap;
   color: var(--ink-faint);
   font-size: 0.82rem;
+}
+
+/* Craftbook detail header */
+
+.craftbook-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 0.4rem 0 1.15rem;
+  max-width: 58rem;
+}
+
+.craftbook-hero-icon {
+  width: 9rem;
+  height: 9rem;
+  flex: 0 0 9rem;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) * 2);
+  background: var(--bg-inset);
+  box-shadow: 0 0.35rem 1.2rem rgb(44 37 27 / 0.1);
+}
+
+.craftbook-hero-copy {
+  min-width: 0;
+}
+
+.craftbook-hero-copy h1 {
+  margin-bottom: 0.6rem;
+}
+
+.craftbook-hero-copy .card-meta {
+  margin-top: 0;
+}
+
+@media (max-width: 40rem) {
+  .craftbook-hero {
+    align-items: flex-start;
+    gap: 0.9rem;
+  }
+
+  .craftbook-hero-icon {
+    width: 6rem;
+    height: 6rem;
+    flex-basis: 6rem;
+  }
 }
 
 /* Badges — small, square-ish, keys-in-trays */

@@ -24,14 +24,28 @@ const releasedAt = typeof book.releasedAt === 'string' ? book.releasedAt.slice(0
 
 <Layout title={`${book.name} - craftbooks - gilde`} description={excerpt(book.description, 155)}>
   <p><a href="/craftbooks/">&larr; All craftbooks</a></p>
-  <h1>{book.name}</h1>
-  <p class="card-meta" style="margin-top:0;">
-    <span class="badge badge-plain">{book.family}</span>
-    {book.hasEval && <span class="badge badge-eval">eval</span>}
-    <span>v{book.version}</span>
-    {releasedAt && <span>released {releasedAt}</span>}
-    {book.workflow && <span>workflow: {book.workflow}</span>}
-  </p>
+  <div class="craftbook-hero">
+    {book.logoUrl && (
+      <img
+        class="craftbook-hero-icon"
+        src={book.logoUrl}
+        alt=""
+        width="144"
+        height="144"
+        decoding="async"
+      />
+    )}
+    <div class="craftbook-hero-copy">
+      <h1>{book.name}</h1>
+      <p class="card-meta">
+        <span class="badge badge-plain">{book.family}</span>
+        {book.hasEval && <span class="badge badge-eval">eval</span>}
+        <span>v{book.version}</span>
+        {releasedAt && <span>released {releasedAt}</span>}
+        {book.workflow && <span>workflow: {book.workflow}</span>}
+      </p>
+    </div>
+  </div>
 
   <div class="prose">
     <p>{book.description}</p>

@@ -27,12 +27,29 @@ const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').repla
       <h2 id={slugify(g.family)}>{g.family}</h2>
       <div class="tile-grid">
         {g.books.map((b) => (
-          <a class="card" href={`/craftbooks/${b.id}/`}>
-            <h3>{b.name}</h3>
-            <p>{excerpt(b.description, 150)}</p>
-            <span class="card-meta">
-              <span>{b.steps.length} {b.steps.length === 1 ? 'step' : 'steps'}</span>
-              {b.hasEval && <span class="badge badge-eval">eval</span>}
+          <a
+            class="card craftbook-card"
+            href={`/craftbooks/${b.id}/`}
+            style={`--craftbook-card-bg: ${b.cardTint}`}
+          >
+            {b.logoUrl && (
+              <img
+                class="craftbook-card-icon"
+                src={b.logoUrl}
+                alt=""
+                width="72"
+                height="72"
+                loading="lazy"
+                decoding="async"
+              />
+            )}
+            <span class="craftbook-card-copy">
+              <h3>{b.name}</h3>
+              <p>{excerpt(b.description, 150)}</p>
+              <span class="card-meta">
+                <span>{b.steps.length} {b.steps.length === 1 ? 'step' : 'steps'}</span>
+                {b.hasEval && <span class="badge badge-eval">eval</span>}
+              </span>
             </span>
           </a>
         ))}

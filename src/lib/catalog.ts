@@ -165,6 +165,9 @@ export interface Craftbook extends Record<string, any> {
   id: string;
   name: string;
   description: string;
+  logo?: string;
+  logoUrl?: string;
+  cardTint: string;
   steps: Array<Record<string, any>>;
   hasEval: boolean;
   family: string;
@@ -174,6 +177,8 @@ export function craftbooks(): Craftbook[] {
   return (manifests('craftbook-templates') as Craftbook[])
     .map((m) => ({
       ...m,
+      logoUrl: craftbookLogoPath(m) ? `/craftbooks/${m.id}/logo.webp` : undefined,
+      cardTint: craftbookCardTint(m),
       hasEval: existsSync(join(itemDir('craftbook-templates', m.id), 'versions', m.version, 'test.json')),
       family: familyFor(m),
     }))
@@ -182,6 +187,47 @@ export function craftbooks(): Craftbook[] {
 
 export function craftbook(id: string): Craftbook | undefined {
   return craftbooks().find((c) => c.id === id);
+}
+
+function craftbookLogoPath(book: Pick<Craftbook, 'id' | 'logo'>): string | undefined {
+  // The published package currently uses one WebP logo per craftbook. Keep
+  // the route deliberately narrow so a malformed manifest cannot read an
+  // arbitrary file from the catalog checkout.
+  if (book.logo !== 'logo.webp') return undefined;
+  const path = join(itemDir('craftbook-templates', book.id), book.logo);
+  return existsSync(path) ? path : undefined;
+}
+
+export function craftbookLogoBytes(book: Pick<Craftbook, 'id' | 'logo'>): Uint8Array | undefined {
+  const path = craftbookLogoPath(book);
+  return path ? readFileSync(path) : undefined;
+}
+
+const CRAFTBOOK_CARD_TINTS: Record<string, string> = {
+  'analyze-measure': '#d8ccba',
+  'build-code': '#d6cab8',
+  'communicate-market': '#dfc9b2',
+  'design-media': '#e1cbb0',
+  'inspect-review': '#dccfb6',
+  'operate-maintain': '#d8ceb8',
+  'people-events-growth': '#dfc8b4',
+  'plan-coordinate': '#dfccac',
+  'research-learn': '#d9cfb5',
+  'write-publish': '#ddc9b2',
+};
+
+function craftbookCardTint(book: Pick<Craftbook, 'id'>): string {
+  const path = join(itemDir('craftbook-templates', book.id), 'art.json');
+  if (!existsSync(path)) return '#dfceb4';
+
+  try {
+    const art = JSON.parse(readFileSync(path, 'utf8')) as { family?: unknown };
+    return typeof art.family === 'string'
+      ? CRAFTBOOK_CARD_TINTS[art.family] ?? '#dfceb4'
+      : '#dfceb4';
+  } catch {
+    return '#dfceb4';
+  }
 }
 
 /**
