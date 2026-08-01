@@ -7,7 +7,7 @@
  * into the workspace), then ../gilde (local sibling checkout).
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { extname, join, resolve } from 'node:path';
 import { marked } from 'marked';
 
 let cachedRoot: string | null = null;
@@ -133,8 +133,87 @@ export function connectorTypes(): Record<string, any>[] {
   return manifests('connector-types');
 }
 
-export function projectTypes(): Record<string, any>[] {
-  return manifests('project-types');
+export interface ProjectType extends Record<string, any> {
+  id: string;
+  name: string;
+  description: string;
+  demoUrl?: string;
+}
+
+export interface ProjectTypeDemoAsset {
+  projectTypeId: string;
+  path: string;
+  bytes: Uint8Array;
+  contentType: string;
+}
+
+function safePagePath(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.replaceAll('\\', '/').replace(/^\.\//, '');
+  const segments = normalized.split('/');
+  if (!normalized || normalized.startsWith('/') || segments.some((part) => !part || part === '..')) {
+    return undefined;
+  }
+  return normalized;
+}
+
+function pageContentType(path: string): string {
+  switch (extname(path).toLowerCase()) {
+    case '.html': return 'text/html; charset=utf-8';
+    case '.css': return 'text/css; charset=utf-8';
+    case '.js':
+    case '.mjs': return 'text/javascript; charset=utf-8';
+    case '.json': return 'application/json; charset=utf-8';
+    case '.svg': return 'image/svg+xml';
+    case '.png': return 'image/png';
+    case '.webp': return 'image/webp';
+    case '.jpg':
+    case '.jpeg': return 'image/jpeg';
+    case '.gif': return 'image/gif';
+    case '.ico': return 'image/x-icon';
+    case '.woff': return 'font/woff';
+    case '.woff2': return 'font/woff2';
+    default: return 'application/octet-stream';
+  }
+}
+
+function pageAssetPaths(root: string, prefix = ''): string[] {
+  const paths: string[] = [];
+  for (const entry of readdirSync(join(root, prefix), { withFileTypes: true })) {
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) paths.push(...pageAssetPaths(root, relative));
+    else if (entry.isFile()) paths.push(relative);
+  }
+  return paths;
+}
+
+export function projectTypes(): ProjectType[] {
+  return (manifests('project-types') as ProjectType[]).map((project) => {
+    const entry = safePagePath(project.pages?.entry);
+    const root = join(itemDir('project-types', project.id), 'versions', project.version, 'pages');
+    const hasDemo = entry && existsSync(join(root, ...entry.split('/')));
+    return {
+      ...project,
+      demoUrl: hasDemo ? `/project-types/${project.id}/demo/${entry}` : undefined,
+    };
+  });
+}
+
+export function projectTypeDemoAssets(): ProjectTypeDemoAsset[] {
+  const assets: ProjectTypeDemoAsset[] = [];
+  for (const project of projectTypes()) {
+    if (!project.demoUrl) continue;
+    const root = join(itemDir('project-types', project.id), 'versions', project.version, 'pages');
+    for (const path of pageAssetPaths(root)) {
+      assets.push({
+        projectTypeId: project.id,
+        path,
+        bytes: readFileSync(join(root, ...path.split('/'))),
+        contentType: pageContentType(path),
+      });
+    }
+  }
+  return assets;
 }
 
 // ---------------------------------------------------------------------------

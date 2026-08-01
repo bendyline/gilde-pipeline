@@ -66,7 +66,7 @@ const sortedGroups = [...projectGroups.entries()].sort((a, b) => a[0].localeComp
       <h3>{category}</h3>
       <div class="tile-grid">
         {list.map((p) => (
-          <a class="card" href={githubTreeUrl('project-types', p.id)}>
+          <a class="card" href={`/project-types/${p.id}/`}>
             <h3>{p.name}</h3>
             <p>{excerpt(p.description, 150)}</p>
             <span class="card-meta">

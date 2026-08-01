@@ -646,6 +646,58 @@ details.step-prompt pre {
   max-width: 46rem;
 }
 
+/* Project type demos */
+
+.project-demo-section {
+  margin-top: 2.2rem;
+}
+
+.project-demo-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.project-demo-heading h2,
+.project-demo-heading p {
+  margin-bottom: 0;
+}
+
+.project-demo-heading > a {
+  flex: none;
+}
+
+.project-demo-shell {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #181715;
+  box-shadow: 0 0.35rem 1.2rem rgb(44 37 27 / 0.12);
+}
+
+.project-demo-frame {
+  display: block;
+  width: 100%;
+  height: min(52rem, calc(100vh - 3rem));
+  min-height: 36rem;
+  border: 0;
+  background: #181715;
+}
+
+@media (max-width: 40rem) {
+  .project-demo-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .project-demo-frame {
+    height: 44rem;
+    min-height: 30rem;
+  }
+}
+
 /* Home hero */
 
 .hero {
