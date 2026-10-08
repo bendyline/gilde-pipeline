@@ -54,6 +54,7 @@ const KINDS = [
   ['chat-model', 'data/chat-models/index.json'],
   ['image-model', 'data/image-models/index.json'],
   ['video-model', 'data/video-models/index.json'],
+  ['knowledge-catalog', 'data/knowledge-catalogs/index.json'],
   ['toolset', 'data/toolsets/index.json'],
   ['connector-type', 'data/connector-types/index.json'],
   ['project-type', 'data/project-types/index.json'],
