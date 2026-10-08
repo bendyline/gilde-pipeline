@@ -63,9 +63,9 @@ jobs:
         working-directory: gilde
         run: node tools/validate.mjs
 
-      - name: Check indexes are current
+      - name: Build catalog indexes
         working-directory: gilde
-        run: node tools/build-index.mjs --check
+        run: npm run build
 
       - name: Lint model manifests
         working-directory: gilde
@@ -100,6 +100,12 @@ jobs:
 
       - name: Install site dependencies
         run: npm ci
+
+      # Gilde indexes are package build artifacts, not tracked source files.
+      # This checkout feeds both Astro's catalog reader and the update-manifest
+      # builder, so materialize them before either consumer runs.
+      - name: Build gilde catalog indexes
+        run: npm --prefix gilde run build
 
       # The site always tracks whatever `latest` is on the registry — run
       # this workflow after a publish to pick up the new version.

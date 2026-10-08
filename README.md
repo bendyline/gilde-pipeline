@@ -3,8 +3,9 @@
 The site-deployment pipeline for the [gilde](https://github.com/bendyline/gilde)
 catalog. One workflow, two stages:
 
-1. **Verify** — check out gilde and re-run its own validation
-   (`tools/validate.mjs`, `tools/build-index.mjs --check`, `tools/lint-models.mjs`).
+1. **Verify** — check out gilde, re-run its own validation, and build its
+   Git-ignored catalog indexes (`tools/validate.mjs`, `npm run build`,
+   `tools/lint-models.mjs`).
    Defense in depth: the pipeline never trusts that branch protection ran them.
 2. **Deploy site** — build the redirect pages and the catalog update manifest,
    and deploy both to GitHub Pages at <https://gezelgilde.com>.
