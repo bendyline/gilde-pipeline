@@ -6,8 +6,8 @@ catalog. One workflow, two stages:
 1. **Verify** — check out gilde and re-run its own validation
    (`tools/validate.mjs`, `tools/build-index.mjs --check`, `tools/lint-models.mjs`).
    Defense in depth: the pipeline never trusts that branch protection ran them.
-2. **Deploy site** — build the Astro site and the catalog update manifest, and
-   deploy both to GitHub Pages at <https://gezelgilde.com>.
+2. **Deploy site** — build the redirect pages and the catalog update manifest,
+   and deploy both to GitHub Pages at <https://gezelgilde.com>.
 
 npm publishing does **not** happen here: `@bendyline/gilde` publishes from the
 `publish.yml` workflow inside [bendyline/gilde](https://github.com/bendyline/gilde)
@@ -15,11 +15,28 @@ itself, so that npm provenance attestations verify against
 `package.json.repository`. This pipeline resolves the published version from
 the registry (`npm view @bendyline/gilde version`).
 
-The site is the marketing and distribution surface for the catalog: craftbook
-gallery, model tables, roles, toolsets, the community MCP directory, and the
-versioned update-manifest JSON contract that gezel clients poll
-(see `gilde/docs/update-manifest.md`; served at
-`https://gezelgilde.com/catalog/v1/latest.json`).
+The browsable catalog now lives on **gezel.com**: the gezel repo's Handboek
+export (`pnpm docs:site`) renders every craftbook, model, role template,
+project type (with its page demo) and toolset there, so the catalog adds to
+gezel.com's search presence instead of splitting it. gezelgilde.com is kept as
+a **redirect shell**: every page it used to serve answers with an immediate
+redirect (zero-second meta refresh plus `rel=canonical`) to its gezel.com
+equivalent, so old links and search results keep working.
+
+| Old address | Now |
+| --- | --- |
+| `/` | `gezel.com/#catalog` |
+| `/craftbooks/`, `/craftbooks/<id>/` | `gezel.com/docs/craftbooks-index/`, `/docs/craftbook/<id>/` |
+| `/models/`, `/models/<id>/` | `gezel.com/docs/model-catalog/`, `/docs/model/<id>/` |
+| `/roles/`, `/roles/<id>/` | `gezel.com/docs/role-catalog/`, `/docs/role-template/<id>/` |
+| `/toolsets/`, `/community/` | `gezel.com/docs/toolset-catalog/` |
+| `/project-types/<id>/` | `gezel.com/docs/project-type/<id>/` |
+| `/docs/<slug>/` | gilde's `docs/<slug>.md` on GitHub |
+
+Redirects are generated from gilde's `raw-index.json`, so every item id has
+one. The machine-facing part of the site is unchanged: the versioned
+update-manifest JSON contract (see `gilde/docs/update-manifest.md`) is still
+built and served at `https://gezelgilde.com/catalog/v1/latest.json`.
 
 ## Trigger model
 

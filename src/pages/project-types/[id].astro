@@ -1,79 +1,12 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { excerpt, githubTreeUrl, projectTypes } from '../../lib/catalog';
-import type { ProjectType } from '../../lib/catalog';
+import Redirect from '../../layouts/Redirect.astro';
+import { GEZEL_DOCS, itemIds } from '../../lib/catalog';
 
 export function getStaticPaths() {
-  return projectTypes().map((project) => ({ params: { id: project.id }, props: { project } }));
+  return itemIds('project-types').map((id) => ({ params: { id } }));
 }
 
-interface Props {
-  project: ProjectType;
-}
-
-const { project } = Astro.props;
-const releasedAt = typeof project.releasedAt === 'string' ? project.releasedAt.slice(0, 10) : '';
-const gezels = Array.isArray(project.gezels) ? project.gezels : [];
-const tools = Array.isArray(project.tools) ? project.tools : [];
-const craftbooks = Array.isArray(project.craftbooks) ? project.craftbooks : [];
+const { id } = Astro.params;
 ---
 
-<Layout title={`${project.name} - project types - gilde`} description={excerpt(project.description, 155)}>
-  <p><a href="/toolsets/#project-types">&larr; All project types</a></p>
-  <h1>{project.name}</h1>
-  <p class="card-meta">
-    {project.category && <span class="badge badge-plain">{project.category}</span>}
-    <span>v{project.version}</span>
-    {releasedAt && <span>released {releasedAt}</span>}
-  </p>
-  <div class="prose">
-    <p>{project.description}</p>
-  </div>
-
-  {project.demoUrl ? (
-    <section class="project-demo-section" aria-labelledby="demo-heading">
-      <div class="project-demo-heading">
-        <div>
-          <h2 id="demo-heading">Try the room</h2>
-          <p class="section-note">
-            This is the page’s standalone demo mode. It uses sample data locally and does not
-            connect to Gezel or your files.
-          </p>
-        </div>
-        <a href={project.demoUrl} target="_blank" rel="noreferrer">Open demo in a new tab</a>
-      </div>
-      <div class="project-demo-shell">
-        <iframe
-          class="project-demo-frame"
-          src={project.demoUrl}
-          title={`${project.name} interactive demo`}
-          loading="lazy"
-          sandbox="allow-forms allow-modals allow-scripts"
-          referrerpolicy="no-referrer"
-        ></iframe>
-      </div>
-    </section>
-  ) : (
-    <section aria-labelledby="demo-heading">
-      <h2 id="demo-heading">About this room</h2>
-      <p class="section-note">
-        This project type is conversation-led and does not have a standalone page to preview.
-      </p>
-    </section>
-  )}
-
-  <h2>What’s included</h2>
-  <dl class="fact-grid">
-    <dt>Crew</dt>
-    <dd>{gezels.length} gezel{gezels.length === 1 ? '' : 's'}</dd>
-    <dt>Page tools</dt>
-    <dd>{tools.length}</dd>
-    <dt>Starting craftbooks</dt>
-    <dd>{craftbooks.length}</dd>
-  </dl>
-
-  <h2>Source</h2>
-  <p>
-    <a href={githubTreeUrl('project-types', project.id)}>View this project type on GitHub</a>
-  </p>
-</Layout>
+<Redirect to={`${GEZEL_DOCS}project-type/${id}/`} />

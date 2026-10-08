@@ -1,0 +1,28 @@
+---
+/**
+ * gezelgilde.com moved into gezel.com, where the Handboek export renders the
+ * same catalog. Every old address answers with an immediate redirect to its
+ * new home: GitHub Pages cannot send a 301, and a zero-second meta refresh
+ * plus a canonical link is what search engines treat as one.
+ */
+interface Props {
+  to: string;
+}
+
+const { to } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Moved to gezel.com</title>
+    <meta http-equiv="refresh" content={`0; url=${to}`} />
+    <link rel="canonical" href={to} />
+    <script is:inline define:vars={{ to }}>location.replace(to);</script>
+  </head>
+  <body>
+    <p>The Gezel catalog now lives on gezel.com: <a href={to}>{to}</a></p>
+  </body>
+</html>
